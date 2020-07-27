@@ -1,0 +1,39 @@
+version: '3.1'
+
+networks:
+  ghost-network:
+    external: true
+  traefik-public:
+    external: true
+
+services:
+  ghost:
+    image: ghost:3-alpine
+    networks:
+      - traefik-public
+      - ghost-network
+    environment:
+      # see https://docs.ghost.org/docs/config#section-running-ghost-with-config-env-variables
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: root
+      database__connection__password: halow
+      database__connection__database: ghost
+      # this url value is just an example, and is likely wrong for your environment!
+      url: http://yohanna.id
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.ghost.rule=Host(`yohanna.id`)
+        - traefik.http.routers.ghost.entrypoints=web
+        - traefik.http.services.ghost.loadbalancer.server.port=2368
+        - traefik.docker.network=traefik-public
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    networks:
+      - ghost-network
+    environment:
+      MYSQL_ROOT_PASSWORD: halow
